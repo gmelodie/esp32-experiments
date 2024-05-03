@@ -19,12 +19,10 @@ fn main() -> ! {
     let mut delay = Delay::new(&clocks);
 
     let io = IO::new(peripherals.GPIO, peripherals.IO_MUX);
-    println!("here1");
     let mut led = io.pins.gpio2.into_push_pull_output();
 
     led.set_high().unwrap();
 
-    println!("Hello world!");
     loop {
         println!("Loop...");
         delay.delay_ms(500u32);
