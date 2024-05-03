@@ -27,7 +27,8 @@ fn main() {
     let wifi_configuration = Configuration::Client(ClientConfiguration {
         ssid: SSID.try_into().unwrap(),
         bssid: None,
-        auth_method: AuthMethod::WPA3Personal,
+        // auth_method: AuthMethod::WPA3Personal,
+        auth_method: AuthMethod::WPA2Personal,
         password: PASSWORD.try_into().unwrap(),
         channel: None,
         ..Default::default()
