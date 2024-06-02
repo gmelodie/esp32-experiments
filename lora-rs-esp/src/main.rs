@@ -82,12 +82,13 @@ async fn main(_spawner: Spawner) {
     };
 
     println!("Setting up iv");
-
     let iv = GenericSx127xInterfaceVariant::new(rst, dio1, None, None).unwrap();
+
+    println!("Setting up sx127x radio kind");
+    let mut rk = Sx127x::new(spi, iv, config);
+
     println!("Setting up lora");
-    let lora = LoRa::new(Sx127x::new(spi, iv, config), false, Delay)
-        .await
-        .unwrap();
+    let lora = LoRa::new(rk, false, Delay).await.unwrap();
 
     println!("Setting up radio");
     let radio: LorawanRadio<_, _, MAX_TX_POWER> = lora.into();
