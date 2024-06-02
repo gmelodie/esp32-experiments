@@ -21,7 +21,7 @@ log = { version = "0.4.20" }
 lora-phy = { path = "/home/gmelodie/repos/lora-rs/lora-phy", features = ["lorawan-radio"] }
 lorawan-device = { path = "/home/gmelodie/repos/lora-rs/lorawan-device", default-features = false, features = ["embassy-time", "default-crypto", "defmt"] }
 
-embedded-hal-bus = { version = "0.1.0", features = ["async"]}
+embedded-hal-bus = { version = "0.2.0", features = ["async"]}
 embedded-nal-async = "0.4.0"
 
 [profile.dev]

@@ -5,7 +5,10 @@
 use embassy_executor::Spawner;
 use embassy_time::Delay;
 use esp_backtrace as _;
+use esp_hal::dma::Spi2DmaChannel;
+use esp_hal::spi::master::dma::SpiDma;
 use esp_hal::spi::master::prelude::_esp_hal_spi_master_dma_WithDmaSpi2;
+use esp_hal::spi::FullDuplexMode;
 use esp_hal::{
     clock::ClockControl,
     dma::{Dma, DmaPriority},
