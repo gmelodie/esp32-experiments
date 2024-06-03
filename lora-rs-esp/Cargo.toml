@@ -12,17 +12,17 @@ esp-backtrace = { version = "0.11.0", features = [
     "panic-handler",
     "println",
 ] }
-esp-hal = { version = "0.17.0", features = [ "esp32", "embassy", "async", "embassy-executor-thread", "embassy-time-timg0", "embedded-hal-async"] }
-
-embassy-time = { version = "0.3.0" }
-embassy-executor = { version= "0.5.0", features = ["integrated-timers", "nightly"] }
 esp-println = { version = "0.9.1", features = ["esp32", "log", "defmt-espflash"] }
 log = { version = "0.4.20" }
-lora-phy = { path = "/home/gmelodie/repos/lora-rs/lora-phy", features = ["lorawan-radio"] }
-lorawan-device = { path = "/home/gmelodie/repos/lora-rs/lorawan-device", default-features = false, features = ["embassy-time", "default-crypto", "defmt"] }
 
+esp-hal = { git ="https://github.com/esp-rs/esp-hal", rev = "60e4b882efce5d0d29c7283c286eb8cb6b7b1bf7", features = [ "esp32", "embedded-hal", "embassy", "async", "embassy-time-timg0", "embedded-hal-async"] }
+embassy-time = { version = "0.3.0" }
+embassy-executor = { version= "0.5.0", features = ["integrated-timers", "nightly"] }
 embedded-hal-bus = { version = "0.2.0", features = ["async"]}
-embedded-nal-async = "0.4.0"
+
+lora-phy = { path = "./lora-rs/lora-phy", features = ["lorawan-radio"] }
+lorawan-device = { path = "./lora-rs/lorawan-device", default-features = false, features = ["embassy-time", "default-crypto", "defmt"] }
+
 
 [profile.dev]
 # Rust debug is too slow. 

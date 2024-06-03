@@ -5,20 +5,17 @@
 use embassy_executor::Spawner;
 use embassy_time::Delay;
 use esp_backtrace as _;
-use esp_hal::dma::Spi2DmaChannel;
-use esp_hal::spi::master::dma::SpiDma;
 use esp_hal::spi::master::prelude::_esp_hal_spi_master_dma_WithDmaSpi2;
-use esp_hal::spi::FullDuplexMode;
 use esp_hal::{
     clock::ClockControl,
     dma::{Dma, DmaPriority},
-    dma_buffers, dma_descriptors, embassy,
-    gpio::IO,
+    dma_descriptors, embassy,
+    gpio::{Input, Io, Level, Output, Pull},
     peripherals::Peripherals,
     prelude::*,
     spi::{master::Spi, SpiMode},
-    timer::TimerGroup,
-    FlashSafeDma,
+    system::SystemControl,
+    timer::timg::TimerGroup,
 };
 use esp_println::println;
 
@@ -40,7 +37,7 @@ const MAX_TX_POWER: u8 = 14;
 #[main]
 async fn main(_spawner: Spawner) {
     let peripherals = Peripherals::take();
-    let system = peripherals.SYSTEM.split();
+    let system = SystemControl::new(peripherals.SYSTEM);
 
     // setup system timer
     let clocks = ClockControl::boot_defaults(system.clock_control).freeze();
@@ -50,19 +47,20 @@ async fn main(_spawner: Spawner) {
     embassy::init(&clocks, timg0);
     // let delay = Delay::new(&clocks);
 
-    let io = IO::new(peripherals.GPIO, peripherals.IO_MUX);
+    let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
     let sclk = io.pins.gpio5;
     let miso = io.pins.gpio19;
     let mosi = io.pins.gpio27;
-    let cs = io.pins.gpio18.into_push_pull_output();
-    let rst = io.pins.gpio14.into_push_pull_output();
-    let dio1 = io.pins.gpio26.into_pull_down_input();
+    let cs = io.pins.gpio18;
+    let rst = io.pins.gpio14;
+    let dio1 = io.pins.gpio26;
 
     let dma = Dma::new(peripherals.DMA);
 
     let dma_channel = dma.spi2channel;
     let (mut descriptors, mut rx_descriptors) = dma_descriptors!(32000);
 
+    // TODO: SpiDma (implements embedded_hal_async::spi::SpiBus)
     let spi = Spi::new(peripherals.SPI2, 100.kHz(), SpiMode::Mode0, &clocks)
         .with_sck(sclk)
         .with_mosi(mosi)
@@ -75,7 +73,7 @@ async fn main(_spawner: Spawner) {
         ));
 
     // let spi = FlashSafeDma::new(spi);
-    let spi = ExclusiveDevice::new(spi, cs, Delay);
+    let spi = ExclusiveDevice::new(spi, Output::new(cs, Level::Low), Delay).unwrap();
 
     let config = sx127x::Config {
         chip: Sx1276,
@@ -85,13 +83,19 @@ async fn main(_spawner: Spawner) {
     };
 
     println!("Setting up iv");
-    let iv = GenericSx127xInterfaceVariant::new(rst, dio1, None, None).unwrap();
+    let iv = GenericSx127xInterfaceVariant::new(
+        Output::new(rst, Level::Low),
+        Input::new(dio1, Pull::Down),
+        None,
+        None,
+    )
+    .unwrap();
 
     println!("Setting up sx127x radio kind");
-    let mut rk = Sx127x::new(spi, iv, config);
+    let rk = Sx127x::new(spi, iv, config);
 
     println!("Setting up lora");
-    let lora = LoRa::new(rk, false, Delay).await.unwrap();
+    let lora = LoRa::new(rk, true, Delay).await.unwrap();
 
     println!("Setting up radio");
     let radio: LorawanRadio<_, _, MAX_TX_POWER> = lora.into();
