@@ -9,7 +9,7 @@ use esp_hal::spi::master::prelude::_esp_hal_spi_master_dma_WithDmaSpi2;
 use esp_hal::{
     clock::ClockControl,
     dma::{Dma, DmaPriority},
-    dma_descriptors, embassy,
+    dma_descriptors,
     gpio::{Input, Io, Level, Output, Pull},
     peripherals::Peripherals,
     prelude::*,
@@ -38,14 +38,14 @@ const MAX_TX_POWER: u8 = 14;
 async fn main(_spawner: Spawner) {
     let peripherals = Peripherals::take();
     let system = SystemControl::new(peripherals.SYSTEM);
+    let clocks = ClockControl::boot_defaults(system.clock_control).freeze();
 
     // setup system timer
-    let clocks = ClockControl::boot_defaults(system.clock_control).freeze();
     let timg0 = TimerGroup::new_async(peripherals.TIMG0, &clocks);
-    esp_println::logger::init_logger_from_env();
+    esp_hal_embassy::init(&clocks, timg0);
 
-    embassy::init(&clocks, timg0);
     // let delay = Delay::new(&clocks);
+    esp_println::logger::init_logger_from_env();
 
     let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
     let sclk = io.pins.gpio5;
@@ -61,7 +61,7 @@ async fn main(_spawner: Spawner) {
     let (mut descriptors, mut rx_descriptors) = dma_descriptors!(32000);
 
     // TODO: SpiDma (implements embedded_hal_async::spi::SpiBus)
-    let spi = Spi::new(peripherals.SPI2, 100.kHz(), SpiMode::Mode0, &clocks)
+    let mut spi = Spi::new(peripherals.SPI2, 100.kHz(), SpiMode::Mode0, &clocks)
         .with_sck(sclk)
         .with_mosi(mosi)
         .with_miso(miso)
@@ -71,6 +71,13 @@ async fn main(_spawner: Spawner) {
             &mut rx_descriptors,
             DmaPriority::Priority0,
         ));
+    let send_buffer = [0, 1, 2, 3, 4, 5, 6, 7];
+    let mut buffer = [0; 8];
+    println!("Sending bytes");
+    embedded_hal_async::spi::SpiBus::transfer(&mut spi, &mut buffer, &send_buffer)
+        .await
+        .unwrap();
+    println!("sent!");
 
     // let spi = FlashSafeDma::new(spi);
     let spi = ExclusiveDevice::new(spi, Output::new(cs, Level::Low), Delay).unwrap();
